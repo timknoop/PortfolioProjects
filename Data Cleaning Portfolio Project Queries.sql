@@ -4,7 +4,7 @@ Cleaning Data in SQL Queries
 
 
 Select *
-From cars.car_info
+FROM cars.car_info
 
 --------------------------------------------------------------------------------------------------------------------------
 --Inspect fuel type column
