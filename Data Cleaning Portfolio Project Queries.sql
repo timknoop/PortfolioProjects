@@ -67,7 +67,7 @@ COUNTIF(UnitPrice > 1000) AS excessive_unit_price
 FROM
 sales.sales_info_clean;
 
-—- Correct invalid values
+-- Correct invalid values
 CREATE OR REPLACE TABLE
 sales.sales_info_clean
 AS
