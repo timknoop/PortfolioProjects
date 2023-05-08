@@ -1,109 +1,82 @@
 /*
-Cleaning Data in SQL Queries
+Cleaning Data in SQL Queries using BigQuery
 */
 
 
-Select *
-FROM cars.car_info
+SELECT *
+FROM sales.sales_info
+LIMIT 10;
 
 --------------------------------------------------------------------------------------------------------------------------
---Inspect fuel type column
+-- Count the total number of rows in the table
+SELECT COUNT(*) AS total_rows
+FROM sales.sales_info;
 
-SELECT
-  DISTINCT fuel_type
-FROM
-  cars.car_info;
+-- Count the number of distinct rows in the table
+SELECT COUNT(*) as num_distinct_rows
+FROM (
+SELECT DISTINCT *
+FROM sales.sales_info
+)
 
---Inspect length column
-  
-SELECT
-  MIN(length) AS min_length,
-  MAX(length) AS max_length
-FROM
-  cars.car_info;
-  
-  
---Fill in missing data
+—- Remove duplicates
 
-SELECT
-  *
+CREATE TABLE
+sales.sales_info_clean AS
+SELECT DISTINCT *
 FROM
-  cars.car_info 
-WHERE 
-  num_of_doors IS NULL;
-  
-  
-UPDATE
-  cars.car_info
-SET
-  num_of_doors = "four"
+sales.sales_info
+
+************************************************Check for missing values************************************************
+
+-- Check for missing values
+SELECT
+COUNT(*) AS num_rows,
+COUNTIF(SalesId IS NULL) AS missing_sales_id,
+COUNTIF(StoreId IS NULL) AS missing_store_id,
+COUNTIF(ProductId IS NULL) AS missing_product_id,
+COUNTIF(Date IS NULL) AS missing_date,
+COUNTIF(UnitPrice IS NULL) AS missing_unit_price,
+COUNTIF(Quantity IS NULL) AS missing_quantity
+FROM
+sales.sales_info
+
+-- Drop rows with missing values
+CREATE OR REPLACE TABLE
+sales.sales_info_clean AS
+SELECT
+*
+FROM
+sales.sales_info_clean
 WHERE
-  make = "dodge"
-  AND fuel_type = "gas"
-  AND body_style = "sedan";
-  
-  
---Identify potential errors
+SalesId IS NOT NULL
+AND StoreId IS NOT NULL
+AND ProductId IS NOT NULL
+AND Date IS NOT NULL
+AND UnitPrice IS NOT NULL
+AND Quantity IS NOT NULL;
 
-SELECT
-  DISTINCT num_of_cylinders
-FROM
-  cars.car_info;
-  
-  
-UPDATE
-  cars.car_info
-SET
-  num_of_cylinders = "two"
-WHERE
-  num_of_cylinders = "tow";
-  
-  
-SELECT
-  MIN(compression_ratio) AS min_compression_ratio,
-  MAX(compression_ratio) AS max_compression_ratio
-FROM
-  cars.car_info;
-  
- 
-SELECT
-  MIN(compression_ratio) AS min_compression_ratio,
-  MAX(compression_ratio) AS max_compression_ratio
-FROM
-  cars.car_info
-WHERE
-  compression_ratio <> 70;
-  
- 
-SELECT
-   COUNT(*) AS num_of_rows_to_delete
-FROM
-   cars.car_info
-WHERE
-   compression_ratio = 70;
-   
-  
-DELETE cars.car_info
-WHERE compression_ratio = 70;
+**********Check for invalid values**********
 
-
---Ensure consistency
-
+-- Check for invalid values
 SELECT
-  DISTINCT drive_wheels
+COUNT(*) AS num_rows,
+COUNTIF(Quantity < 0) AS negative_quantity,
+COUNTIF(UnitPrice < 0) AS negative_unit_price,
+COUNTIF(UnitPrice > 1000) AS excessive_unit_price
 FROM
-  cars.car_info;
-  
- 
+sales.sales_info_clean;
+
+—- Correct invalid values
+CREATE OR REPLACE TABLE
+sales.sales_info_clean
+AS
 SELECT
-  DISTINCT drive_wheels,
-  LENGTH(drive_wheels) AS string_length
+SalesId,
+StoreId,
+ProductId,
+Date,
+CASE WHEN Quantity < 0 THEN 0 ELSE Quantity END AS Quantity,
+CASE WHEN UnitPrice < 0 OR THEN 0 ELSE UnitPrice END AS UnitPrice
 FROM
-  cars.car_info;
-  
-  
-UPDATE
-  cars.car_info
-SET
-  drive_wheels = TRIM(drive_wheels)
-WHERE TRUE;
+sales.sales_info_clean;
